@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import cv2
+import os
 
 # --------- HAND MASK ---------
 def get_mask(img):
@@ -33,41 +34,8 @@ def shape_score(c1, c2):
 # --------- MAIN ---------
 def run_sign_to_text():
 
-    st.title("🤟 Sign to Text (Upload + Match)")
+    st.title("🤟 Sign to Text (Camera ISL)")
 
-    st.write("Step 1: Upload reference ISL images (A, B, C...)")
-    ref_files = st.file_uploader(
-        "Upload gesture images", type=["jpg", "jpeg", "png"], accept_multiple_files=True
-    )
-
-    if not ref_files:
-        st.warning("Upload reference images first")
-        return
-
-    # Load reference contours
-    ref_contours = {}
-
-    for file in ref_files:
-        file_bytes = np.asarray(bytearray(file.read()), dtype=np.uint8)
-        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-
-        if img is None:
-            continue
-
-        mask = get_mask(img)
-        contour = get_contour(mask)
-
-        if contour is not None:
-            label = file.name.split(".")[0].upper()  # A.jpg → A
-            ref_contours[label] = contour
-
-    if not ref_contours:
-        st.error("No valid hand shapes in reference images")
-        return
-
-    st.success(f"{len(ref_contours)} reference gestures loaded")
-
-    # -------- CAPTURE --------
     img_file = st.camera_input("Capture Hand Sign")
 
     if img_file:
@@ -76,12 +44,13 @@ def run_sign_to_text():
         captured = cv2.imdecode(data, cv2.IMREAD_COLOR)
 
         if captured is None:
-            st.error("Invalid capture")
+            st.error("Invalid image")
             return
 
         st.image(cv2.cvtColor(captured, cv2.COLOR_BGR2RGB),
                  caption="Captured Image", use_container_width=True)
 
+        # Extract hand
         mask = get_mask(captured)
         contour = get_contour(mask)
 
@@ -89,17 +58,46 @@ def run_sign_to_text():
             st.error("No hand detected")
             return
 
+        folder = "images"
+
         best_letter = None
         best_score = float("inf")
 
-        for label, ref_contour in ref_contours.items():
+        # Compare with all ISL images
+        for file in os.listdir(folder):
+
+            path = os.path.join(folder, file)
+            ref = cv2.imread(path)
+
+            if ref is None:
+                continue
+
+            ref_mask = get_mask(ref)
+            ref_contour = get_contour(ref_mask)
+
+            if ref_contour is None:
+                continue
+
             score = shape_score(contour, ref_contour)
 
             if score < best_score:
                 best_score = score
-                best_letter = label
+                best_letter = file.split(".")[0]
 
+        # -------- SHOW RESULT LIKE TEXT→SIGN --------
         if best_letter:
+
             st.success(f"Detected Letter: {best_letter}")
+
+            cols = st.columns(1)
+
+            file_path = os.path.join("images", f"{best_letter}.jpeg")
+
+            with cols[0]:
+                if os.path.exists(file_path):
+                    st.image(file_path, width=150, caption=best_letter)
+                else:
+                    st.write(f"{best_letter} ❌")
+
         else:
             st.error("No match found")
