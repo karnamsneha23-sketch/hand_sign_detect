@@ -17,8 +17,8 @@ menu = st.sidebar.radio(
 # ---------------- SAFE IMPORTS (FIXED) ----------------
 if menu == "Text to Sign":
     try:
-        from text_to_sign import text_to_sign
-        text_to_sign()
+        from text_to_sign import text_to_sign_page
+        text_to_sign_page()
     except Exception as e:
         st.error(f"Text to Sign module error: {e}")
 
