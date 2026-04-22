@@ -1,3 +1,6 @@
+import os
+os.environ["QT_QPA_PLATFORM"] = "offscreen"
+
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -5,7 +8,6 @@ import streamlit as st
 import time
 from collections import deque
 from gtts import gTTS
-import os
 from playsound import playsound
 import uuid
 
@@ -29,7 +31,7 @@ if "last_speech" not in st.session_state:
 if "buffer" not in st.session_state:
     st.session_state.buffer = deque(maxlen=7)
 
-# ---------------- SAFE SPEECH (NEW FIX) ----------------
+# ---------------- SAFE SPEECH ----------------
 def speak(text):
     try:
         if not text:
@@ -65,89 +67,33 @@ def get_fingers(hand):
 
 # ---------------- CLASSIFIER ----------------
 def classify(hand):
-
     thumb, index, middle, ring, pinky = get_fingers(hand)
     total = thumb + index + middle + ring + pinky
 
-    # ---- BASIC ----
     if total == 0:
-        return "A"  # also E, S fallback
-
+        return "A"
     if thumb == 0 and index == 1 and middle == 1 and ring == 1 and pinky == 1:
         return "B"
-
     if index == 1 and middle == 1 and ring == 0:
         return "C"
-
     if index == 1 and total == 1:
         return "D"
-
     if thumb == 1 and index == 1 and middle == 0:
         return "F"
-
     if index == 1 and middle == 0 and ring == 0:
         return "G"
-
     if index == 1 and middle == 1:
         return "H"
-
     if pinky == 1 and total == 1:
         return "I"
-
     if thumb == 1 and index == 1:
         return "L"
-
     if index == 1 and middle == 1 and ring == 1:
         return "W"
-
     if thumb == 1 and pinky == 1:
         return "Y"
-
-    # ---- EXTRA APPROX LETTERS ----
-    if index == 1 and middle == 0 and ring == 0 and pinky == 0:
-        return "J"   # motion-based approx
-
-    if index == 1 and middle == 1 and ring == 0:
-        return "K"
-
-    if index == 0 and middle == 0 and ring == 0:
-        return "M"
-
-    if index == 0 and middle == 0:
-        return "N"
-
-    if thumb == 0 and index == 0 and middle == 0:
-        return "O"
-
-    if index == 1 and middle == 1 and ring == 1:
-        return "P"
-
-    if thumb == 1 and index == 1 and middle == 1:
-        return "Q"
-
-    if index == 1 and middle == 1:
-        return "R"
-
-    if thumb == 0 and index == 0:
-        return "T"
-
-    if index == 1 and middle == 1 and ring == 0:
-        return "U"
-
-    if index == 1 and middle == 1:
-        return "V"
-
-    if index == 1:
-        return "X"
-
-    if thumb == 1 and pinky == 1:
-        return "Y"
-
-    if index == 1:
-        return "Z"
 
     return None
-
 
 # ---------------- STABILITY ----------------
 def stable(letter):
@@ -159,7 +105,9 @@ def stable(letter):
 # ---------------- APP ----------------
 def sign_to_text():
 
-    st.title("🤟 sign to text")
+    st.title("🤟 Sign to Text")
+
+    st.warning("⚠️ Camera may not work on Streamlit Cloud. Run locally for full feature.")
 
     run = st.checkbox("Start Camera")
 
@@ -167,6 +115,10 @@ def sign_to_text():
     output = st.empty()
 
     cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        st.error("❌ Camera not accessible. Please run this app locally.")
+        return
 
     last_letter = None
     last_time = time.time()
@@ -218,7 +170,7 @@ def sign_to_text():
                     st.session_state.sentence += " "
                     last_time = time.time()
 
-        # ---------------- FIXED SPEECH ----------------
+        # SPEECH
         text = st.session_state.sentence.strip()
 
         if len(text) > 2:
@@ -230,6 +182,7 @@ def sign_to_text():
         output.markdown(f"## 📝 Sentence: {st.session_state.sentence}")
 
     cap.release()
+
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
