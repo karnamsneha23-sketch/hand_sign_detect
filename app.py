@@ -14,21 +14,23 @@ menu = st.sidebar.radio(
     ["Text to Sign", "Sign to Text", "Speech to Sign"]
 )
 
-# ---------------- SAFE IMPORTS (FIXED) ----------------
+# ---------------- TEXT TO SIGN ----------------
 if menu == "Text to Sign":
     try:
-        from text_to_sign import text_to_sign_page
-        text_to_sign_page()
+        import text_to_sign
+        text_to_sign.text_to_sign_page()
     except Exception as e:
         st.error(f"Text to Sign module error: {e}")
 
+# ---------------- SIGN TO TEXT ----------------
 elif menu == "Sign to Text":
     try:
-       from text_to_sign import text_to_sign_page
+        from sign_to_text import sign_to_text
         sign_to_text()
     except Exception as e:
         st.error(f"Sign to Text module error: {e}")
 
+# ---------------- SPEECH TO SIGN ----------------
 elif menu == "Speech to Sign":
     try:
         from speech_to_sign import app
