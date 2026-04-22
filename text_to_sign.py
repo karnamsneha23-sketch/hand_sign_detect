@@ -1,38 +1,15 @@
 import streamlit as st
 import os
 
-IMAGES_PATH = "images"
+st.title("Text to Sign")
 
-def get_image(char):
-    # check all possible extensions
-    for ext in [".jpg", ".png", ".jpeg"]:
-        path = os.path.join(IMAGES_PATH, char.upper() + ext)
-        if os.path.exists(path):
-            return path
-    return None
+text = st.text_input("Enter text")
 
-def text_to_sign_page():
-    st.title("📝 Text → Sign")
+if text:
+    for ch in text.lower():
+        file_name = f"{ch.upper()}.jpeg"   # matches your files
 
-    text = st.text_input("Enter text")
-
-    # DEBUG
-    st.write("Typed:", text)
-
-    if st.button("Convert"):
-        if text.strip() == "":
-            st.warning("Enter text first!")
-            return
-
-        st.success("Converting...")
-
-        cols = st.columns(len(text))
-
-        for i, char in enumerate(text):
-            if char.isalpha():
-                img_path = get_image(char)
-
-                if img_path:
-                    cols[i].image(img_path, caption=char)
-                else:
-                    cols[i].error(f"{char} ❌ not found")
+        if os.path.exists(file_name):
+            st.image(file_name, width=100)
+        else:
+            st.write(f"{ch} ❌ not found")
