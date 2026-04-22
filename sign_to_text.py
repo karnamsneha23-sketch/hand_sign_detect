@@ -1,49 +1,79 @@
 import streamlit as st
 import cv2
 import numpy as np
-import mediapipe as mp
 
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(static_image_mode=True, max_num_hands=1)
-mp_draw = mp.solutions.drawing_utils
+# SAFE MEDIAPIPE IMPORT
+try:
+    import mediapipe as mp
+    hands_module = mp.solutions.hands
+    draw_module = mp.solutions.drawing_utils
+    mp_available = True
+except Exception:
+    mp_available = False
 
 def run_sign_to_text():
 
-    st.title("🤟 Sign to Text (Camera)")
+    st.title("🤟 ISL Sign Detection")
 
-    img_file = st.camera_input("Capture your hand sign")
+    if not mp_available:
+        st.error("⚠️ MediaPipe not working in deployment")
+        st.info("Showing demo detection instead")
+    
+    img_file = st.camera_input("Capture Hand Sign")
 
     if img_file:
 
         file_bytes = np.asarray(bytearray(img_file.read()), dtype=np.uint8)
         img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        result = hands.process(img_rgb)
+        st.image(img_rgb, use_container_width=True)
 
-        if result.multi_hand_landmarks:
+        # ---------------- REAL IF MEDIAPIPE WORKS ----------------
+        if mp_available:
 
-            for handLms in result.multi_hand_landmarks:
-                mp_draw.draw_landmarks(img_rgb, handLms, mp_hands.HAND_CONNECTIONS)
+            hands = hands_module.Hands(static_image_mode=True, max_num_hands=1)
+            results = hands.process(img_rgb)
 
-            st.image(img_rgb, caption="Hand Detected", use_container_width=True)
+            if results.multi_hand_landmarks:
+                lm = results.multi_hand_landmarks[0].landmark
 
-            landmarks = result.multi_hand_landmarks[0].landmark
+                # -------- BASIC ISL LOGIC --------
+                thumb = lm[4].y
+                index = lm[8].y
+                middle = lm[12].y
+                ring = lm[16].y
+                pinky = lm[20].y
+                wrist = lm[0].y
 
-            # SIMPLE REAL LOGIC (based on finger positions)
-            index_tip = landmarks[8].y
-            middle_tip = landmarks[12].y
-            wrist = landmarks[0].y
+                # 🟢 FEW REALISTIC ISL LETTER RULES
+                if index < wrist and middle < wrist and ring < wrist and pinky < wrist:
+                    letter = "B"   # open palm
 
-            if index_tip < wrist and middle_tip < wrist:
-                letter = "B"
-            elif index_tip < wrist:
-                letter = "D"
+                elif index < wrist and middle > wrist:
+                    letter = "D"   # index finger up
+
+                elif index > wrist and middle > wrist and ring > wrist:
+                    letter = "A"   # fist
+
+                else:
+                    letter = "C"
+
+                st.success(f"Detected Letter: {letter}")
+
             else:
-                letter = "A"
+                st.warning("No hand detected")
 
-            st.success(f"Detected Letter: {letter}")
-
+        # ---------------- FALLBACK (NO MEDIAPIPE) ----------------
         else:
-            st.warning("No hand detected")
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            avg = np.mean(gray)
+
+            if avg < 80:
+                letter = "A"
+            elif avg < 120:
+                letter = "B"
+            else:
+                letter = "C"
+
+            st.success(f"Demo Letter: {letter}")
