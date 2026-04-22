@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-def text_to_sign_page():
+def  text_to_sign_page():
     st.title("Text to Sign")
 
     text = st.text_input("Enter text")
