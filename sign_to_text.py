@@ -1,30 +1,47 @@
 import streamlit as st
-import numpy as np
 import cv2
+import numpy as np
+import mediapipe as mp
+
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(static_image_mode=True, max_num_hands=1)
 
 def run_sign_to_text():
 
-    file = st.file_uploader("Upload hand sign image", type=["jpg", "png", "jpeg"])
+    st.title("🤟 Live Sign Detection (Web Camera)")
 
-    if file:
-        try:
-            # read image safely
-            data = np.asarray(bytearray(file.read()), dtype=np.uint8)
-            img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+    st.write("Click below to enable camera and capture hand sign")
 
-            if img is None:
-                st.error("❌ Invalid image file")
-                return
+    image = st.camera_input("📷 Capture Hand Sign")
 
-            # convert BGR → RGB
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    if image:
 
-            st.image(img, caption="Uploaded Image", use_container_width=True)
+        # Convert image
+        file_bytes = np.asarray(bytearray(image.read()), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
-            # dummy prediction (replace later with ML model)
-            predicted_letter = "A"
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-            st.success(f"Detected Letter: {predicted_letter}")
+        # Detect hand
+        result = hands.process(img_rgb)
 
-        except Exception as e:
-            st.error(f"Error: {e}")
+        if result.multi_hand_landmarks:
+
+            st.image(img_rgb, caption="Hand Detected", use_container_width=True)
+
+            landmarks = result.multi_hand_landmarks[0].landmark
+
+            # SIMPLE FEATURE (finger position logic)
+            index_finger_tip = landmarks[8].y
+            thumb_tip = landmarks[4].y
+
+            # Simple rule-based classification
+            if index_finger_tip < thumb_tip:
+                letter = "A"
+            else:
+                letter = "B"
+
+            st.success(f"Detected Letter: {letter}")
+
+        else:
+            st.warning("No hand detected. Try again.")
