@@ -1,24 +1,29 @@
 import streamlit as st
 import speech_recognition as sr
 import os
+import tempfile
 
 # ---------------- CONFIG ----------------
 st.set_page_config(page_title="Speech to ISL", layout="centered")
 r = sr.Recognizer()
 
-# ---------------- SPEECH ----------------
-def listen_speech():
-    with sr.Microphone() as source:
-        st.info("🎤 SPEAK NOW (don’t click anything)")
-        r.adjust_for_ambient_noise(source, duration=0.3)
-        audio = r.listen(source, timeout=None, phrase_time_limit=5)
-
+# ---------------- SPEECH (FILE BASED) ----------------
+def process_audio(uploaded_file):
     try:
-        return r.recognize_google(audio)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            tmp.write(uploaded_file.read())
+            temp_path = tmp.name
+
+        with sr.AudioFile(temp_path) as source:
+            audio = r.record(source)
+
+        text = r.recognize_google(audio)
+        return text
+
     except sr.UnknownValueError:
         return None
     except sr.RequestError:
-        st.error("⚠️ Speech recognition service unavailable. Check internet connection.")
+        st.error("⚠️ No internet / API issue")
         return None
     except Exception as e:
         st.error(f"❌ Error: {e}")
@@ -55,25 +60,23 @@ def show_isl(text):
 def app():
     st.title("🎤➡️🤟 Speech to ISL")
 
-    if "text" not in st.session_state:
-        st.session_state.text = ""
+    # 🔥 AUDIO UPLOAD (WORKS IN CLOUD)
+    uploaded_file = st.file_uploader("Upload your speech (.wav)", type=["wav"])
 
-    if st.button("🎙️ START SPEECH"):
-        text = listen_speech()
+    if uploaded_file:
+        st.info("🔄 Processing audio...")
+        text = process_audio(uploaded_file)
+
         if text:
-            st.session_state.text = text
             st.success("✅ You said: " + text)
+            show_isl(text)
         else:
-            st.error("❌ Could not understand speech")
+            st.error("❌ Could not understand audio")
 
-    # Manual fallback for deployment
+    # 🔹 Manual fallback (always works)
     manual_text = st.text_input("Or type text here:")
     if manual_text:
-        st.session_state.text = manual_text
-
-    if st.session_state.text:
-        show_isl(st.session_state.text)
-
+        show_isl(manual_text)
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
