@@ -60,7 +60,7 @@ def show_isl(text):
 def app():
     st.title("🎤➡️🤟 Speech to ISL")
 
-    # 🔥 AUDIO UPLOAD (WORKS IN CLOUD)
+    # ✅ ONLY AUDIO UPLOAD
     uploaded_file = st.file_uploader("Upload your speech (.wav)", type=["wav"])
 
     if uploaded_file:
@@ -72,11 +72,6 @@ def app():
             show_isl(text)
         else:
             st.error("❌ Could not understand audio")
-
-    # 🔹 Manual fallback (always works)
-    manual_text = st.text_input("Or type text here:")
-    if manual_text:
-        show_isl(manual_text)
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
