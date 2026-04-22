@@ -2,22 +2,18 @@ import streamlit as st
 import numpy as np
 import cv2
 
-st.title("🤟 Sign to Text (Upload Image)")
+st.title("🤟 Sign to Text")
 
-file = st.file_uploader("Upload hand sign image", type=["jpg", "png", "jpeg"])
+file = st.file_uploader("Upload image", type=["jpg", "png", "jpeg"])
 
-if file is not None:
-    try:
-        file_bytes = np.asarray(bytearray(file.read()), dtype=np.uint8)
-        frame = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+if file:
+    file_bytes = np.asarray(bytearray(file.read()), dtype=np.uint8)
+    img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
-        if frame is None:
-            st.error("Invalid image")
-        else:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            st.image(frame)
+    if img is None:
+        st.error("Invalid image")
+    else:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        st.image(img)
 
-            st.success("Detected Letter: A")
-
-    except Exception as e:
-        st.error(f"Error: {e}")
+        st.success("Detected Letter: A")
