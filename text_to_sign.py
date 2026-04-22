@@ -9,14 +9,17 @@ def text_to_sign_page():
     if text:
         st.write("Output:")
 
-        for ch in text.lower():
+        # create columns equal to number of letters
+        cols = st.columns(len(text))
+
+        for i, ch in enumerate(text.lower()):
             if ch == " ":
-                st.write(" ")  # space
                 continue
 
             file_name = f"{ch.upper()}.jpeg"
 
-            if os.path.exists(file_name):
-                st.image(file_name, width=120)
-            else:
-                st.write(f"{ch} ❌ not found")
+            with cols[i]:
+                if os.path.exists(file_name):
+                    st.image(file_name, width=120)
+                else:
+                    st.write(f"{ch} ❌")
