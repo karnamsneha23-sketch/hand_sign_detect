@@ -24,7 +24,7 @@ if menu == "Text to Sign":
 
 elif menu == "Sign to Text":
     try:
-        import text_to_sign
+       from text_to_sign import text_to_sign_page
         sign_to_text()
     except Exception as e:
         st.error(f"Sign to Text module error: {e}")
